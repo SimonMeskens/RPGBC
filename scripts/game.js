@@ -21,7 +21,9 @@ define("game", function (require) {
     };
 
     var controls = {};
-    controls[States.GAME] = {
+
+    controls[States.GAME] = new Map();
+    controls[States.GAME].set(States, {
         display: '\u2192: Move Right',
         set: function () {
             keyListener.simple_combo('right', function () {
@@ -34,21 +36,19 @@ define("game", function (require) {
                 });
             });
         }
-    };
-    controls[States.CUT_SCENE_PLAYING] = {
+    });
+
+    controls[States.CUT_SCENE_PLAYING] = new Map();
+    controls[States.CUT_SCENE_PLAYING].set(States, {
         display: ' ',
         set: function () {}
-    };
-    controls[States.CUT_SCENE_WAITING] = {
-        display: 'c: Continue',
-        set: function () {
-            keyListener.simple_combo('c', function () {
-                changeState(States.CUT_SCENE_PLAYING);
-                update();
-                render();
-            });
-        }
-    };
+    });
+
+    controls[States.CUT_SCENE_WAITING] = new Map();
+    controls[States.CUT_SCENE_WAITING].set(States, {
+        display: ' ',
+        set: function () {}
+    });
 
     var gui = {};
     gui[States.GAME] = 'GUI';
@@ -75,7 +75,10 @@ define("game", function (require) {
 
         scene.controls = controls[state];
         keyListener.reset();
-        controls[state].set();
+
+        controls[state].forEach(function(value, key) {
+            value.set();
+        });
 
         render();
         renderGui();
@@ -138,7 +141,11 @@ define("game", function (require) {
     }
 
     function renderControls() {
-        elements.controls.innerHTML = scene.controls.display;
+        elements.controls.innerHTML = '';
+
+        controls[scene.state].forEach(function(value, key) {
+            elements.controls.innerHTML += value.display + ' ';
+        });
     }
 
     function collide(pos1, pos2) {
@@ -191,6 +198,7 @@ define("game", function (require) {
     function start() {
         var keypress = require('keypress');
         keyListener = new keypress.Listener();
+        game.keyListener = keyListener;
 
         scene.entities.push(assets.hero);
         scene.entities.push(assets.amazon);
@@ -206,6 +214,8 @@ define("game", function (require) {
     game.States = States;
     game.scene = scene;
     game.changeState = changeState;
+    game.keyListener = keyListener;
+    game.controls = controls;
     game.update = update;
     game.render = render;
     game.renderGui = renderGui;

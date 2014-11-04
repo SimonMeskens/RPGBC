@@ -42,7 +42,7 @@ define("assets", function () {
         tooltip: 'You see a club, but no baby seals.',
         collision: function (entity) {
             if (entity === assets.hero) {
-                window.alert('bamf');
+
                 return true;
             }
             return false;
@@ -55,6 +55,18 @@ define("assets", function () {
     assets.amazonCutscene = function (game) {
         var self = this;
         if (game.scene.state === game.States.GAME && Math.abs(self.position - assets.hero.position) < 30) {
+
+            game.controls[game.States.CUT_SCENE_WAITING].set(this, {
+                display: 'c: Continue',
+                set: function () {
+                    game.keyListener.simple_combo('c', function () {
+                        game.changeState(game.States.CUT_SCENE_PLAYING);
+                        game.update();
+                        game.render();
+                    });
+                }
+            });
+
             game.changeState(game.States.CUT_SCENE_PLAYING);
 
             var moveHero = function () {
@@ -90,6 +102,7 @@ define("assets", function () {
                 if (Math.abs(self.position - assets.hero.position) < 70) game.delay(game.scene.speed, moveAmazon);
                 else {
                     game.scene.entities.splice(game.scene.entities.indexOf(self), 1);
+                    game.controls[game.States.CUT_SCENE_WAITING].delete(this);
                     game.changeState(game.States.GAME);
                 }
             };
