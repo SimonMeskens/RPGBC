@@ -1,0 +1,14 @@
+# Site settings
+title: ????
+email: meskens.simon@gmail.com
+description: > # this means to ignore newlines until "baseurl:"
+  RPG By Committee is an experiment to show how well (or not at all) 
+  writing a game, completely through community input, works.
+baseurl: "/RPGBC" # the subpath of your site, e.g. /blog/
+url: "http://game-designer.org/projects/RPGBC" # the base hostname & protocol for your site
+
+# Build settings
+markdown: kramdown
+highlighter: pygments
+safe: true
+lsi: false
