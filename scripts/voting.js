@@ -2,6 +2,8 @@
 
 define('voting', function () {
     
+    var url = 'http://projects.game-designer.org/RPGBC/vote.php';
+
     var request = function (url, callback) {
         var request = new window.XMLHttpRequest();
         var wrapper = function(event) {
@@ -16,7 +18,7 @@ define('voting', function () {
     window.document.getElementById('add').addEventListener('click', function (event) {
         var text = window.prompt("What's your feature idea?", "");
         if (text !== null) {
-            request(require.config.voting + '?add=' + text, function () {
+            request(url + '?add=' + text, function () {
                 window.document.querySelector('#votes ul').innerHTML = '';
                 getFeatures();
             });
@@ -25,16 +27,16 @@ define('voting', function () {
     });
 
     function getFeatures() {
-        request('http://projects.game-designer.org/RPGBC/vote.php', function (data) {
+        request(url, function (data) {
             data.forEach(function (feature) {
                 window.document.querySelector('#votes ul').innerHTML +=
                     '<li>' +
                     '<span class="vote">' +
                     '<a href="#" class="plus" data-click="' +
-                    require.config.voting + '?plus=' + feature[0] + '">+</a>' +
+                    url + '?plus=' + feature[0] + '">+</a>' +
                     '<span id="ftr_' + feature[0] + '">(' + feature[2] + ')</span>' +
                     '<a href="#" class="minus" data-click="' +
-                    require.config.voting + '?minus=' + feature[0] + '">-</a>' +
+                    url + '?minus=' + feature[0] + '">-</a>' +
                     '</span>' +
                     feature[1] +
                     '</li>';
