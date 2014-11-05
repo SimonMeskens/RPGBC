@@ -1,16 +1,13 @@
 /* global window, define, require */
 
-define("game", function (require) {
-    var assets = require('assets');
+define('game', ['keypress', 'assets'], function (keypress, assets) {
     var game = {};
     
     var elements = {
-        level: window.document.getElementById('level'),
+        level: window.document.getElementById('level').firstChild,
         gui: window.document.getElementById('gui'),
         controls: window.document.getElementById('controls')
     };
-
-    var keyListener;
 
     var States = {
         GAME: 0,
@@ -19,41 +16,9 @@ define("game", function (require) {
 
         callback: null
     };
-
-    var controls = {};
-
-    controls[States.GAME] = new Map();
-    controls[States.GAME].set(States, {
-        display: '\u2192: Move Right',
-        set: function () {
-            keyListener.simple_combo('right', function () {
-                delay(scene.speed, function () {
-                    move(assets.hero, 'right');
-                    scene.position = assets.hero.position;
-
-                    update();
-                    render();
-                });
-            });
-        }
+    Object.defineProperty(States, 'callback', {
+        enumerable: false
     });
-
-    controls[States.CUT_SCENE_PLAYING] = new Map();
-    controls[States.CUT_SCENE_PLAYING].set(States, {
-        display: ' ',
-        set: function () {}
-    });
-
-    controls[States.CUT_SCENE_WAITING] = new Map();
-    controls[States.CUT_SCENE_WAITING].set(States, {
-        display: ' ',
-        set: function () {}
-    });
-
-    var gui = {};
-    gui[States.GAME] = 'GUI';
-    gui[States.CUT_SCENE_PLAYING] = '';
-    gui[States.CUT_SCENE_WAITING] = '';
 
     var scene = {
         position: 0,
@@ -68,13 +33,92 @@ define("game", function (require) {
         controls: null
     };
 
+    var controls = {};
+
+    for (var key in States) {
+        controls[States[key]] = new Map();
+    }
+
+    function addControls(entity, state, display, key, fn) {
+        var control = {
+            display: display,
+            set: function() {
+                scene.keyListener.simple_combo(key, fn);
+            }
+        };
+
+        if (controls[state].has(entity)) {
+            controls[state].get(entity).display += ', ' + control.display;
+            var prev = controls[state].get(entity).set;
+            controls[state].get(entity).set = function () {
+                prev();
+                control.set();
+            };
+        }
+        else {
+            controls[state].set(entity, control);
+        }
+
+        if (scene.state === state) {
+            var callback = States.callback;
+            States.callback = null;
+            changeState(state);
+            States.callback = callback;
+        }
+    }
+
+    function removeControls(entity, state) {
+        controls[state].delete(entity);
+
+        if (scene.state === state) {
+            var callback = States.callback;
+            States.callback = null;
+            changeState(state);
+            States.callback = callback;
+        }
+    }
+
+    addControls(States, States.GAME, '\u2192: Move Right', 'right', function() {
+        delay(scene.speed, function () {
+            move(assets.hero, 'right');
+            scene.position = assets.hero.position;
+
+            update();
+            render();
+        });
+    });
+
+    addControls(States, States.GAME, '\u2190: Move Left', 'left', function() {
+        delay(scene.speed, function () {
+            move(assets.hero, 'left');
+            scene.position = assets.hero.position;
+
+            update();
+            render();
+        });
+    });
+
+    var gui = {};
+    gui[States.GAME] = function() {
+        var description = 'Weapon: ';
+
+        if (assets.hero.children[2] !== null)
+            description += assets.hero.children[2].name;
+        else
+            description += 'None';
+
+        return description;
+    };
+    gui[States.CUT_SCENE_PLAYING] = '';
+    gui[States.CUT_SCENE_WAITING] = '';
+
     function changeState(state, callback) {
         scene.state = state;
 
         scene.gui = gui[state];
 
         scene.controls = controls[state];
-        keyListener.reset();
+        scene.keyListener.reset();
 
         controls[state].forEach(function(value, key) {
             value.set();
@@ -137,15 +181,20 @@ define("game", function (require) {
     }
 
     function renderGui() {
-        elements.gui.innerHTML = scene.gui;
+        if (typeof scene.gui == 'string')
+            elements.gui.innerHTML = scene.gui;
+        else
+            elements.gui.innerHTML = scene.gui();
     }
 
     function renderControls() {
         elements.controls.innerHTML = '';
 
         controls[scene.state].forEach(function(value, key) {
-            elements.controls.innerHTML += value.display + ' ';
+            elements.controls.innerHTML += value.display + ', ';
         });
+
+        elements.controls.innerHTML = elements.controls.innerHTML.substr(0, elements.controls.innerHTML.length - 2);
     }
 
     function collide(pos1, pos2) {
@@ -167,7 +216,7 @@ define("game", function (require) {
     }
 
     function delay(time, callback) {
-        keyListener.stop_listening();
+        scene.keyListener.stop_listening();
         var initial = null;
 
         var step = function (timestamp) {
@@ -177,7 +226,7 @@ define("game", function (require) {
 
             if (progress > time) {
                 if (callback) callback(); 
-                keyListener.listen();
+                scene.keyListener.listen();
             }
             else window.requestAnimationFrame(step);
         };
@@ -196,9 +245,7 @@ define("game", function (require) {
     }
     
     function start() {
-        var keypress = require('keypress');
-        keyListener = new keypress.Listener();
-        game.keyListener = keyListener;
+        scene.keyListener = new keypress.Listener();
 
         scene.entities.push(assets.hero);
         scene.entities.push(assets.amazon);
@@ -213,8 +260,9 @@ define("game", function (require) {
     // Exports
     game.States = States;
     game.scene = scene;
+    game.addControls = addControls;
+    game.removeControls = removeControls;
     game.changeState = changeState;
-    game.keyListener = keyListener;
     game.controls = controls;
     game.update = update;
     game.render = render;

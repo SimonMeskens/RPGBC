@@ -1,6 +1,6 @@
 /* global window, define, require */
 
-define("assets", function () {
+define('assets', ['Composer'], function (Compose) {
     var assets = {};
     
     var Layers = {
@@ -12,29 +12,65 @@ define("assets", function () {
 
     ///// ENTITIES /////
 
-    assets.hero = {
-        character: '\u006F',
-        flipmask: '0',
+    var composit = Compose.phrase({
+        children: [],
+        changeEquipment: function (slot, entity) {
+            this.children[slot] = entity;
+        }
+    })
+    .dynamic({
+        character: {
+            get: function() {
+                return this.children.reduce(function(prev, curr) {
+                    if (curr !== null)
+                        return prev + curr.character;
+                    else
+                        return prev;
+                }, '');
+            },
+            set: function() {}
+        },
+        flipmask: {
+            get: function() {
+                return this.children.reduce(function(prev, curr) {
+                    if (curr !== null)
+                        return prev + curr.flipmask;
+                    else
+                        return prev;
+                }, '');
+            },
+            set: function() {}
+        }
+    });
+
+    assets.hero = composit.phrase({
+        position: 0,
         flipped: true,
         layer: Layers.PLAYER,
         tooltip: 'You see yourself. Can one ever truly see himself? Solipsism FTW.',
-        collision: true,
-        position: 0
-    };
+        collision: true
+    })();
+    assets.hero.children = [ null, {
+        character: '\u006F',
+        flipmask: '0'
+    }, null ];
 
     assets.amazon = {
+        position: 61,
         character: '\u007B\u2014\u03CE\u003E',
         flipmask: '0000',
         flipped: false,
         layer: Layers.NPC,
         tooltip: 'You see boobies. They\'re attached to an Amazon Warrior.',
         collision: true,
-        position: 61
+        update: amazonCutscene
     };
 
     ///// ITEMS /////
 
     assets.club = {
+        position: 90,
+        name: 'Club',
         character: '\u0021',
         flipmask: '0',
         flipped: false,
@@ -42,29 +78,38 @@ define("assets", function () {
         tooltip: 'You see a club, but no baby seals.',
         collision: function (entity) {
             if (entity === assets.hero) {
-
                 return true;
             }
             return false;
         },
-        position: 90
+        update: function(game) {
+            var self = this;
+            if (game.scene.state === game.States.GAME && Math.abs(self.position - assets.hero.position) == 1) {
+                game.removeControls(self, game.States.GAME);
+                game.addControls(assets.club, game.States.GAME, 'p: Pick up', 'p', function() {
+                    assets.hero.changeEquipment(2, assets.club);
+                    game.removeControls(self, game.States.GAME);
+                    game.scene.entities.splice(game.scene.entities.indexOf(self), 1);
+                    game.update();
+                    game.render();
+                });
+            }
+            else {
+                game.removeControls(self, game.States.GAME);
+            }
+        }
     };
 
     ///// CUTSCENES /////
 
-    assets.amazonCutscene = function (game) {
+    function amazonCutscene(game) {
         var self = this;
         if (game.scene.state === game.States.GAME && Math.abs(self.position - assets.hero.position) < 30) {
 
-            game.controls[game.States.CUT_SCENE_WAITING].set(this, {
-                display: 'c: Continue',
-                set: function () {
-                    game.keyListener.simple_combo('c', function () {
-                        game.changeState(game.States.CUT_SCENE_PLAYING);
-                        game.update();
-                        game.render();
-                    });
-                }
+            game.addControls(self, game.States.CUT_SCENE_WAITING, 'c: Continue', 'c', function() {
+                game.changeState(game.States.CUT_SCENE_PLAYING);
+                game.update();
+                game.render();
             });
 
             game.changeState(game.States.CUT_SCENE_PLAYING);
@@ -102,15 +147,14 @@ define("assets", function () {
                 if (Math.abs(self.position - assets.hero.position) < 70) game.delay(game.scene.speed, moveAmazon);
                 else {
                     game.scene.entities.splice(game.scene.entities.indexOf(self), 1);
-                    game.controls[game.States.CUT_SCENE_WAITING].delete(this);
+                    game.removeControls(self, game.States.CUT_SCENE_WAITING);
                     game.changeState(game.States.GAME);
                 }
             };
 
             game.delay(game.scene.speed, moveHero);
         }
-    };
-    assets.amazon.update = assets.amazonCutscene;
+    }
     
     return assets;
 });

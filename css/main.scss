@@ -46,14 +46,20 @@ a {
         background-color: $light;
     }
     #level {
+        overflow: hidden;
+    }
+    #level p {
+        position: relative;
+        top: -0.5em;
         margin: 0.5em $font-width;
         white-space: pre;
         height: 1em;
+        line-height: 2em;
     }
-    #level span {
+    #level p span {
         display: inline-block;
     }
-    #level .flipped {
+    #level p .flipped {
         -moz-transform: scale(-1, 1);
         -webkit-transform: scale(-1, 1);
         -o-transform: scale(-1, 1);
