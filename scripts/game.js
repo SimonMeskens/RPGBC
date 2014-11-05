@@ -250,6 +250,9 @@ define('game', ['keypress', 'assets'], function (keypress, assets) {
         scene.entities.push(assets.hero);
         scene.entities.push(assets.amazon);
         scene.entities.push(assets.club);
+        scene.entities.push(assets.wolf);
+
+        scene.entities.push(assets.border);
 
         changeState(States.GAME);
 
