@@ -59,7 +59,7 @@ define('assets', ['Composer'], function (Compose) {
     ///// ENTITIES /////
 
     assets.hero = composit.phrase({
-        position: 0,
+        position: 30,
         flipped: true,
         layer: Layers.PLAYER,
         tooltip: 'You see yourself. Can one ever truly see himself? Solipsism FTW.',
@@ -71,7 +71,7 @@ define('assets', ['Composer'], function (Compose) {
     }, null ];
 
     assets.amazon = {
-        position: 61,
+        position: 91,
         character: '\u007B\u2014\u03CE\u003E',
         flipmask: '0000',
         flipped: false,
@@ -82,7 +82,7 @@ define('assets', ['Composer'], function (Compose) {
     };
 
     assets.wolf = {
-        position: 120,
+        position: 150,
         character: '\u22E0\u0271',
         flipmask: '00',
         flipped: false,
@@ -95,10 +95,25 @@ define('assets', ['Composer'], function (Compose) {
         }
     };
 
+    assets.tentacles = {
+        position: 0,
+        character: '\u0EAA\u0E97\u0E81\u0E82\u0EB3\u0EB8', //04C2 = schoolgirl outfit
+        flipmask: '010110',
+        flipped: false,
+        layer: Layers.BACKGROUND,
+        tooltip: 'You see tentacles. You feel bothered.',
+        collision: true,
+        visited: false,
+        update: function(game) { attack.call(this, game); },
+        attack: function(game) {
+            tentacleCutscene.call(this, game);
+        }
+    };
+
     ///// ITEMS /////
 
     assets.club = {
-        position: 90,
+        position: 120,
         name: 'Club',
         character: '\u0021',
         flipmask: '0',
@@ -137,8 +152,9 @@ define('assets', ['Composer'], function (Compose) {
 
     function attack(game) {
         var self = this;
-        if (game.scene.state === game.States.GAME &&
-            Math.abs(self.position - assets.hero.position) == assets.hero.character.length) {
+        if (assets.hero.children[2] !== null && game.scene.state === game.States.GAME &&
+            (Math.abs(self.position - assets.hero.position) == assets.hero.character.length ||
+            Math.abs(assets.hero.position - self.position == self.character.length))) {
 
             game.removeControls(self, game.States.GAME);
             game.addControls(self, game.States.GAME, 'a: Attack', 'a', function() {
@@ -148,12 +164,13 @@ define('assets', ['Composer'], function (Compose) {
                 game.update();
                 game.render();
             });
-            game.addControls(self, game.States.GAME, 'p: Pet', 'p', function() {
-                wolfHitCutscene.call(self, game, true);
+            if (self === assets.wolf)
+                game.addControls(self, game.States.GAME, 'p: Pet', 'p', function() {
+                    wolfHitCutscene.call(self, game, true);
 
-                game.update();
-                game.render();
-            });
+                    game.update();
+                    game.render();
+                });
         }
         else {
             game.removeControls(self, game.States.GAME);
@@ -192,7 +209,7 @@ define('assets', ['Composer'], function (Compose) {
                 game.renderGui();
             };
             var flipAmazon = function () {
-                self.flipped = !self.flipped;
+                //self.flipped = !self.flipped;
                 game.update();
                 game.render();
                 game.delay(game.scene.speed, moveAmazon);
@@ -277,6 +294,55 @@ define('assets', ['Composer'], function (Compose) {
         };
 
         game.delay(game.scene.speed, isAltRoute ? line2 : line1);
+    }
+
+    function tentacleCutscene(game) {
+        var self = this;
+
+        game.addControls(self, game.States.CUT_SCENE_WAITING, 'c: Continue', 'c', function() {
+            game.changeState(game.States.CUT_SCENE_PLAYING);
+            game.update();
+            game.render();
+        });
+
+        game.changeState(game.States.CUT_SCENE_PLAYING);
+
+        var line1 = function() {
+            game.changeState(game.States.CUT_SCENE_WAITING, line2);
+            game.scene.gui = 'Wait, that\'s an exit, not an entrance...';
+            game.renderGui();
+        };
+
+        var line2 = function() {
+            game.changeState(game.States.CUT_SCENE_WAITING, swapClothing);
+            game.scene.gui = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH...';
+            game.renderGui();
+        };
+
+        var line3 = function() {
+            game.changeState(game.States.CUT_SCENE_WAITING, flipHero);
+            game.scene.gui = 'You\'re not here to adventure, are you?';
+            game.renderGui();
+        };
+
+        var swapClothing = function() {
+            assets.hero.tooltip = 'You see yourself. You\'re wearing a schoolgirl outfit.';
+            assets.hero.children[1] = {
+                character: '\u04C2',
+                flipmask: '0'
+            };
+            self.visited = true;
+            game.removeControls(self, game.States.CUT_SCENE_WAITING);
+            game.changeState(game.States.GAME);
+        };
+
+        var flipHero = function() {
+            assets.hero.flipped = !assets.hero.flipped;
+            game.removeControls(self, game.States.CUT_SCENE_WAITING);
+            game.changeState(game.States.GAME);
+        };
+
+        game.delay(game.scene.speed, self.visited ? line3 : line1);
     }
 
     return assets;

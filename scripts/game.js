@@ -81,7 +81,9 @@ define('game', ['keypress', 'assets'], function (keypress, assets) {
     addControls(States, States.GAME, '\u2192: Move Right', 'right', function() {
         delay(scene.speed, function () {
             move(assets.hero, 'right');
-            scene.position = assets.hero.position;
+
+            var camDiff = Math.min(assets.hero.position - scene.position, 3);
+            scene.position += camDiff;
 
             update();
             render();
@@ -91,7 +93,9 @@ define('game', ['keypress', 'assets'], function (keypress, assets) {
     addControls(States, States.GAME, '\u2190: Move Left', 'left', function() {
         delay(scene.speed, function () {
             move(assets.hero, 'left');
-            scene.position = assets.hero.position;
+
+            var camDiff = Math.min(scene.position + 61 - assets.hero.position, 3);
+            scene.position = Math.max(0, scene.position - camDiff);
 
             update();
             render();
@@ -236,10 +240,18 @@ define('game', ['keypress', 'assets'], function (keypress, assets) {
 
     function move(entity, direction) {
         var modifier = 0;
-        if (direction == 'right') modifier = 1;
-        if (direction == 'left') modifier = -1;
+        var collidePosition = entity.position;
+        if (direction == 'right') {
+            modifier = 1;
+            collidePosition += modifier + entity.character.length - 1;
+        }
+        if (direction == 'left') {
+            modifier = -1;
+            collidePosition += modifier;
+        }
 
-        if (!collide(entity.position, entity.position + modifier + entity.character.length - 1)) {
+        if (!collide(entity.position, collidePosition)) {
+            entity.flipped = modifier == 1;
             entity.position += modifier;
         }
     }
@@ -247,12 +259,15 @@ define('game', ['keypress', 'assets'], function (keypress, assets) {
     function start() {
         scene.keyListener = new keypress.Listener();
 
+        scene.entities.push(assets.tentacles);
         scene.entities.push(assets.hero);
         scene.entities.push(assets.amazon);
         scene.entities.push(assets.club);
         scene.entities.push(assets.wolf);
 
         scene.entities.push(assets.border);
+
+        scene.position = assets.hero.position;
 
         changeState(States.GAME);
 
