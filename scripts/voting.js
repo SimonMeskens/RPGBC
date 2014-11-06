@@ -1,10 +1,10 @@
 /* global window, define, require, request */
 
-define('voting', function () {
+define('voting', function (require) {
     
-    var url = '//projects.game-designer.org/RPGBC/vote.php';
+    var url = 'http://projects.game-designer.org/RPGBC/vote.php';
 
-    var request = function (url, callback) {
+    /*var request = function (url, callback) {
         var request = new window.XMLHttpRequest();
         var wrapper = function(event) {
             callback(JSON.parse(event.target.responseText));
@@ -13,6 +13,10 @@ define('voting', function () {
         request.addEventListener('load', wrapper);
         request.open('GET', url, true);
         request.send();
+    };*/
+
+    var request = function (url, callback) {
+        require([url], callback);
     };
 
     window.document.getElementById('add').addEventListener('click', function (event) {
@@ -28,7 +32,7 @@ define('voting', function () {
 
     function getFeatures() {
         request(url, function (data) {
-            data.forEach(function (feature) {
+            data.votes.forEach(function (feature) {
                 window.document.querySelector('#votes ul').innerHTML +=
                     '<li>' +
                     '<span class="vote">' +
