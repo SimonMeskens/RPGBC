@@ -2,7 +2,7 @@
 
 define('voting', function () {
     
-    var url = 'http://projects.game-designer.org/RPGBC/vote.php';
+    var url = '//projects.game-designer.org/RPGBC/vote.php';
 
     var request = function (url, callback) {
         var request = new window.XMLHttpRequest();
